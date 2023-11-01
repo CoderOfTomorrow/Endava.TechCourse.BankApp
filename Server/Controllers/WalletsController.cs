@@ -1,63 +1,53 @@
 ﻿using Endava.TechCourse.BankApp.Domain.Models;
 using Endava.TechCourse.BankApp.Infrastructure.Persistence;
+using Endava.TechCourse.BankApp.Server.Common;
 using Endava.TechCourse.BankApp.Shared;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Endava.TechCourse.BankApp.Server.Controllers
 {
-	[Route("api/[controller]")]
-	[ApiController]
-	public class WalletsController : ControllerBase
-	{
-		private readonly ApplicationDbContext _dbContext;
+    [Route("api/wallets")]
+    [ApiController]
+    public class WalletsController : ControllerBase
+    {
+        private readonly ApplicationDbContext context;
 
-		public WalletsController(ApplicationDbContext dbContext)
-		{
-			_dbContext = dbContext;
-		}
+        public WalletsController(ApplicationDbContext context)
+        {
+            ArgumentNullException.ThrowIfNull(context);
 
-		[HttpPost]
-		public IActionResult CreateWallet([FromBody] CreateWalletDTO createWalletDTO)
-		{
-			var wallet = new Wallet
-			{
-				Type = createWalletDTO.Type,
-				Amount = createWalletDTO.Amount,
-				Currency = new Currency
-				{
-					Name = "Euro",
-					CurrencyCode = "EUR",
-					ChangeRate = 20
-				}
-			};
+            this.context = context;
+        }
 
-			_dbContext.Wallets.Add(wallet);
-			_dbContext.SaveChanges();
+        [HttpGet]
+        public async Task<List<WalletDto>> GetWallets()
+        {
+            var wallets = await context.Wallets.Include(x => x.Currency).AsNoTracking().ToListAsync();
+            var dtos = Mapper.Map(wallets).ToList();
 
-			return Ok();
-		}
+            return dtos;
+        }
 
-		[HttpGet]
-		public IActionResult GetWallets()
-		{
-			var walletsDomain = _dbContext.Wallets.ToList();
+        [HttpPost]
+        public async Task<IActionResult> CreateWallet([FromBody] WalletDto walletDto)
+        {
+            var currency = await context.Currencies.FirstOrDefaultAsync(x => x.CurrencyCode == walletDto.Currency);
 
-			var walletsDTO = new List<GetWalletDTO>(walletsDomain.Count);
+            if (currency is null)
+                return BadRequest("Valuta pentru acest portofel nu exista");
 
-			foreach (var walletDomain in walletsDomain)
-			{
-				var walletDTO = new GetWalletDTO
-				{
-					Id = walletDomain.Id,
-					CreateDate = walletDomain.TimeStamp,
-					Type = walletDomain.Type,
-					Amount = walletDomain.Amount
-				};
+            var newWallet = new Wallet()
+            {
+                Type = walletDto.Type,
+                Amount = new Random().Next(50, 300),
+                Currency = currency
+            };
 
-				walletsDTO.Add(walletDTO);
-			}
+            await context.Wallets.AddAsync(newWallet);
+            await context.SaveChangesAsync();
 
-			return Ok(walletsDTO);
-		}
-	}
+            return Ok();
+        }
+    }
 }
