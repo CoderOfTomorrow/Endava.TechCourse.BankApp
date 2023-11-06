@@ -5,7 +5,7 @@ namespace Endava.TechCourse.BankApp.Server.Common
 {
     public static class Mapper
     {
-        public static IEnumerable<WalletDto> Map(IEnumerable<Wallet> wallets)
+        public static List<WalletDto> Map(IEnumerable<Wallet> wallets)
         {
             var dtos = new List<WalletDto>();
 
