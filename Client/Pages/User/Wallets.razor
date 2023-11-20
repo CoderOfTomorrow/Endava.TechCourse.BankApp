@@ -1,9 +1,10 @@
 ﻿@page "/wallets"
-@layout UserLayout
+@layout MainLayout
 @inject HttpClient httpClient
 
 <PageTitle>Endava .NET Tech Course</PageTitle>
 
+<AuthorizeView Roles="User">
 <MudGrid>
     <MudItem md="12">
         <MudText Typo="Typo.h4" GutterBottom="true">Portofele existente</MudText>
@@ -67,6 +68,8 @@
         </MudItem>
     }
 </MudGrid>
+
+</AuthorizeView>
 
 
 @code {

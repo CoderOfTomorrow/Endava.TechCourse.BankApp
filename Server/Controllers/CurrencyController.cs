@@ -1,9 +1,13 @@
-﻿using Endava.TechCourse.BankApp.Application.Commands.AddCurrency;
-using Endava.TechCourse.BankApp.Shared;
+﻿using Endava.University.BankApp.Application.Commands.RemoveCurrency;
+using Endava.University.BankApp.Application.Commands.SaveCurrency;
+using Endava.University.BankApp.Application.Queries;
+using Endava.University.BankApp.Server.Common;
+using Endava.University.BankApp.Shared;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Endava.TechCourse.BankApp.Server.Controllers
+namespace Endava.University.BankApp.Server.Controllers
 {
     [Route("api/currencies")]
     [ApiController]
@@ -18,25 +22,44 @@ namespace Endava.TechCourse.BankApp.Server.Controllers
             this.mediator = mediator;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> AddCurrency([FromBody] CurrencyDto dto)
+        [HttpGet]
+        [Authorize(Roles = "Admin,User")]
+        public async Task<IEnumerable<CurrencyDto>> GetAllCurrencies()
         {
-            var command = new AddCurrencyCommand()
+            var currencies = await mediator.Send(new GetAllCurrenciesQuery());
+
+            return Mapper.Map(currencies);
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> SaveCurrency([FromBody] CurrencyDto dto)
+        {
+            var saveCurrencyCommand = new SaveCurrencyCommand()
             {
                 Name = dto.Name,
                 CurrencyCode = dto.CurrencyCode,
                 ChangeRate = dto.ChangeRate
             };
 
-            var result = await mediator.Send(command);
+            var result = await mediator.Send(saveCurrencyCommand);
 
             return result.IsSuccessful ? Ok() : BadRequest(result.Error);
         }
 
-        [HttpGet]
-        public async Task<List<CurrencyDto>> GetCurrencies()
+        [HttpPost]
+        [Route("delete")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> RemoveCurrency([FromBody] string id)
         {
-            return new();
+            var removeCurrencyCommnd = new RemoveCurrencyCommand()
+            {
+                Id = id
+            };
+
+            var result = await mediator.Send(removeCurrencyCommnd);
+
+            return result.IsSuccessful ? Ok() : BadRequest(result.Error);
         }
     }
 }

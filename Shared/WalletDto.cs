@@ -1,4 +1,4 @@
-﻿namespace Endava.TechCourse.BankApp.Shared
+﻿namespace Endava.University.BankApp.Shared
 {
     public class WalletDto
     {
